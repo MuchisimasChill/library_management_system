@@ -81,6 +81,6 @@ docker compose exec app php bin/phpunit
 ### Dodatkowe:
 - [x] Rate limiting
 - [x] API Documentation (NelmioApiDocBundle)
-- [ ] Event system (wysyłanie powiadomień)
+- [x] Event system (wysyłanie powiadomień)
 - [x] Caching
 - [x] Pagination

@@ -4,14 +4,17 @@ namespace App\Service;
 
 use App\Dto\BookFilterDto;
 use App\Entity\Book;
+use App\Event\BookCreatedEvent;
 use App\Repository\BookRepositoryInterface;
 use InvalidArgumentException;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 class BookService
 {
     public function __construct(
         private readonly BookRepositoryInterface $bookRepository,
-        private readonly CacheService $cacheService
+        private readonly CacheService $cacheService,
+        private readonly EventDispatcherInterface $eventDispatcher
     ) {}
 
     /**
@@ -82,6 +85,9 @@ class BookService
 
         // Clear cache after creating new book
         $this->cacheService->invalidateBookCaches();
+
+        // Dispatch book created event
+        $this->eventDispatcher->dispatch(new BookCreatedEvent($book), BookCreatedEvent::NAME);
 
         return $book;
     }
