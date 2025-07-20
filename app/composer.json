@@ -9,6 +9,7 @@
         "php": ">=8.3",
         "ext-ctype": "*",
         "ext-iconv": "*",
+        "api-platform/core": "*",
         "api-platform/doctrine-orm": "^4.1",
         "api-platform/symfony": "^4.1",
         "doctrine/dbal": "^3",
@@ -85,5 +86,8 @@
             "allow-contrib": false,
             "require": "7.3.*"
         }
+    },
+    "require-dev": {
+        "phpunit/phpunit": "*"
     }
 }

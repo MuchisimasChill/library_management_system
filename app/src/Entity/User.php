@@ -141,9 +141,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getRoles(): array
     {
         return match ($this->type?->value) {
-            'LIBRARIAN' => ['ROLE_LIBRARIAN'],
-            'MEMBER' => ['ROLE_MEMBER'],
-            default => [],
+            UserType::LIBRARIAN->value => ['ROLE_LIBRARIAN'],
+            UserType::MEMBER->value => ['ROLE_MEMBER'],
+            default => ['ROLE_USER'],
         };
     }
 

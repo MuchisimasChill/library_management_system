@@ -22,7 +22,7 @@ class Book
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $author = null;
 
-    #[ORM\Column(length: 17)]
+    #[ORM\Column(length: 17, unique: true)]
     private ?string $isbn = null;
 
     #[ORM\Column(type: Types::SMALLINT, options: ['unsigned' => true])]
