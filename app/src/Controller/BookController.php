@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Dto\BookDto;
 use App\Dto\BookFilterDto;
+use App\Dto\CreateBookDto;
 use App\Service\BookService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Routing\Attribute\Route;
@@ -12,6 +13,7 @@ use Nelmio\ApiDocBundle\Attribute\Model;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 final class BookController extends AbstractController
@@ -19,6 +21,7 @@ final class BookController extends AbstractController
     public function __construct(
         private readonly ValidatorInterface $validator,
         private readonly BookService $bookService,
+        private readonly SerializerInterface $serializer,
     ) {}
 
     #[Route('/api/books', name: 'app_book', methods: ['GET'])]
@@ -123,11 +126,6 @@ final class BookController extends AbstractController
             return $this->json(['errors' => $errorMessages], 400);
         }
 
-        // TODO: включить дебаг
-        // TODO: доделать get с нормальными параметрами и dto
-        // TODO: создать service с тестами
-        // $books = $bookRepository->findByFilters($filters);
-
         $books = $this->bookService->getBooks($filters);
 
         return $this->json($books);
@@ -141,22 +139,22 @@ final class BookController extends AbstractController
         security: [['JWT' => []]],
         requestBody: new OA\RequestBody(
             required: true,
-            content: new OA\JsonContent(
-                ref: new Model(type: BookDto::class),
-                example: [
-                    'title' => 'Harry Potter and the Philosopher\'s Stone',
-                    'author' => 'J.K. Rowling',
-                    'isbn' => '978-0-7475-3269-9',
-                    'year' => 1997,
-                    'copies' => 5
-                ]
-            )
+            content: new OA\JsonContent(ref: new Model(type: CreateBookDto::class))
         ),
         responses: [
             new OA\Response(
                 response: 201,
                 description: 'Book created successfully',
-                content: new OA\JsonContent(ref: new Model(type: BookDto::class))
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'id', type: 'integer', description: 'Book ID'),
+                        new OA\Property(property: 'title', type: 'string', description: 'Book title'),
+                        new OA\Property(property: 'author', type: 'string', description: 'Author name'),
+                        new OA\Property(property: 'isbn', type: 'string', description: 'ISBN number'),
+                        new OA\Property(property: 'year', type: 'integer', description: 'Publication year'),
+                        new OA\Property(property: 'copies', type: 'integer', description: 'Number of copies')
+                    ]
+                )
             ),
             new OA\Response(
                 response: 400,
@@ -193,27 +191,30 @@ final class BookController extends AbstractController
     )]
     public function createBook(Request $request): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
-        
-        if (!$data) {
-            return $this->json(['errors' => ['Invalid JSON format']], 400);
-        }
+        $createBookDto = $this->serializer->deserialize(
+            $request->getContent(),
+            CreateBookDto::class,
+            'json'
+        );
 
-        // Validate required fields
-        $requiredFields = ['title', 'author', 'isbn', 'year', 'copies'];
-        $errors = [];
-        
-        foreach ($requiredFields as $field) {
-            if (!isset($data[$field]) || empty($data[$field])) {
-                $errors[] = "Field '$field' is required";
+        $errors = $this->validator->validate($createBookDto);
+        if (count($errors) > 0) {
+            $errorMessages = [];
+            foreach ($errors as $error) {
+                $errorMessages[] = $error->getMessage();
             }
-        }
-
-        if (!empty($errors)) {
-            return $this->json(['errors' => $errors], 400);
+            return new JsonResponse(['errors' => $errorMessages], 400);
         }
 
         try {
+            $data = [
+                'title' => $createBookDto->title,
+                'author' => $createBookDto->author,
+                'isbn' => $createBookDto->isbn,
+                'year' => $createBookDto->year,
+                'copies' => $createBookDto->copies
+            ];
+            
             $bookDto = $this->bookService->createBook($data);
             return $this->json($bookDto, 201);
         } catch (\Exception $e) {
