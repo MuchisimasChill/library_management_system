@@ -31,6 +31,9 @@
 
 ## Tests
 ### Unit
+```bash
+docker compose exec app php bin/phpunit
+```
 
 ## Good commands
 ```bash

@@ -4,6 +4,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: production
     volumes:
       - .:/app
     ports:
@@ -15,6 +16,22 @@ services:
       XDEBUG_CONFIG: client_host=host.docker.internal client_port=9003
     depends_on:
       - db
+
+  test:
+    container_name: library_management_system_test
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: test
+    volumes:
+      - .:/app
+    environment:
+      DATABASE_URL: mysql://user:password@db:3306/app_db_test
+      APP_ENV: test
+    depends_on:
+      - db
+    profiles:
+      - test
 
   db:
     image: mysql:8.0
