@@ -4,23 +4,28 @@ namespace App\Tests\Service;
 
 use App\Dto\BookFilterDto;
 use App\Entity\Book;
+use App\Event\BookCreatedEvent;
 use App\Repository\BookRepositoryInterface;
 use App\Service\BookService;
 use App\Service\CacheService;
 use InvalidArgumentException;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 class BookServiceTest extends TestCase
 {
-    private BookRepositoryInterface $bookRepository;
-    private CacheService $cacheService;
+    private BookRepositoryInterface|MockObject $bookRepository;
+    private CacheService|MockObject $cacheService;
+    private EventDispatcherInterface|MockObject $eventDispatcher;
     private BookService $bookService;
 
     protected function setUp(): void
     {
         $this->bookRepository = $this->createMock(BookRepositoryInterface::class);
         $this->cacheService = $this->createMock(CacheService::class);
-        $this->bookService = new BookService($this->bookRepository, $this->cacheService);
+        $this->eventDispatcher = $this->createMock(EventDispatcherInterface::class);
+        $this->bookService = new BookService($this->bookRepository, $this->cacheService, $this->eventDispatcher);
     }
 
     public function testGetBooks(): void
@@ -32,14 +37,23 @@ class BookServiceTest extends TestCase
             $this->createBookEntity(2, 'Harry Potter 2', 'J.K. Rowling', '978-0-7475-3269-8'),
         ];
         
+        // Mock CacheService to execute callback directly
+        $this->cacheService
+            ->method('generateBooksListKey')
+            ->willReturn('test_cache_key');
+            
+        $this->cacheService
+            ->method('cacheBooksList')
+            ->willReturnCallback(function ($key, $callback) {
+                return $callback();
+            });
+            
         $this->bookRepository
-            ->expects($this->once())
             ->method('findByFilters')
             ->with($filters)
             ->willReturn($books);
             
         $this->bookRepository
-            ->expects($this->once())
             ->method('countByFilters')
             ->with($filters)
             ->willReturn(2);
@@ -62,8 +76,13 @@ class BookServiceTest extends TestCase
         $bookId = 1;
         $book = $this->createBookEntity($bookId, 'Test Book', 'Test Author', '978-0-123456-78-9');
         
+        $this->cacheService
+            ->method('cacheBook')
+            ->willReturnCallback(function ($id, $callback) {
+                return $callback();
+            });
+        
         $this->bookRepository
-            ->expects($this->once())
             ->method('findBookById')
             ->with($bookId)
             ->willReturn($book);
@@ -80,8 +99,13 @@ class BookServiceTest extends TestCase
         // Arrange
         $bookId = 999;
         
+        $this->cacheService
+            ->method('cacheBook')
+            ->willReturnCallback(function ($id, $callback) {
+                return $callback();
+            });
+        
         $this->bookRepository
-            ->expects($this->once())
             ->method('findBookById')
             ->with($bookId)
             ->willReturn(null);
@@ -105,14 +129,19 @@ class BookServiceTest extends TestCase
         ];
         
         $this->bookRepository
-            ->expects($this->once())
             ->method('findByFilters')
             ->willReturn([]); // No existing books with this ISBN
             
         $this->bookRepository
-            ->expects($this->once())
             ->method('save')
             ->with($this->isInstanceOf(Book::class));
+            
+        $this->cacheService
+            ->method('invalidateBookCaches');
+            
+        $this->eventDispatcher
+            ->method('dispatch')
+            ->with($this->isInstanceOf(BookCreatedEvent::class));
 
         // Act
         $result = $this->bookService->createBook($data);
@@ -140,7 +169,6 @@ class BookServiceTest extends TestCase
         $existingBook = $this->createBookEntity(1, 'Existing Book', 'Existing Author', $data['isbn']);
         
         $this->bookRepository
-            ->expects($this->once())
             ->method('findByFilters')
             ->willReturn([$existingBook]); // Book with this ISBN already exists
             

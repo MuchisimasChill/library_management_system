@@ -8,17 +8,24 @@ use App\Entity\User;
 use App\Enum\LoanStatus;
 use App\Repository\LoanRepositoryInterface;
 use App\Service\LoanService;
+use App\Service\CacheService;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 class LoanServiceTest extends TestCase
 {
-    private LoanRepositoryInterface $loanRepository;
+    private LoanRepositoryInterface|MockObject $loanRepository;
+    private CacheService|MockObject $cacheService;
+    private EventDispatcherInterface|MockObject $eventDispatcher;
     private LoanService $loanService;
 
     protected function setUp(): void
     {
         $this->loanRepository = $this->createMock(LoanRepositoryInterface::class);
-        $this->loanService = new LoanService($this->loanRepository);
+        $this->cacheService = $this->createMock(CacheService::class);
+        $this->eventDispatcher = $this->createMock(EventDispatcherInterface::class);
+        $this->loanService = new LoanService($this->loanRepository, $this->cacheService, $this->eventDispatcher);
     }
 
     public function testCreateLoan(): void
@@ -31,6 +38,20 @@ class LoanServiceTest extends TestCase
             ->expects($this->once())
             ->method('save')
             ->with($this->isInstanceOf(Loan::class));
+            
+        $this->cacheService
+            ->expects($this->once())
+            ->method('invalidateLoanCaches')
+            ->with($user->getId());
+            
+        $this->cacheService
+            ->expects($this->once())
+            ->method('invalidateBookCaches')
+            ->with($book->getId());
+            
+        $this->eventDispatcher
+            ->expects($this->once())
+            ->method('dispatch');
 
         // Act
         $result = $this->loanService->createLoan($book, $user);
@@ -64,6 +85,20 @@ class LoanServiceTest extends TestCase
                 $this->isInstanceOf(\DateTimeImmutable::class),
                 $this->equalTo(LoanStatus::RETURNED)
             );
+            
+        $this->cacheService
+            ->expects($this->once())
+            ->method('invalidateLoanCaches')
+            ->with($user->getId());
+            
+        $this->cacheService
+            ->expects($this->once())
+            ->method('invalidateBookCaches')
+            ->with($book->getId());
+            
+        $this->eventDispatcher
+            ->expects($this->once())
+            ->method('dispatch');
 
         // Act
         $result = $this->loanService->returnBook($loan);

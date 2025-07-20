@@ -6,17 +6,21 @@ use App\Entity\Loan;
 use App\Entity\User;
 use App\Repository\UserRepositoryInterface;
 use App\Service\UserService;
+use App\Service\CacheService;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 class UserServiceTest extends TestCase
 {
-    private UserRepositoryInterface $userRepository;
+    private UserRepositoryInterface|MockObject $userRepository;
+    private CacheService|MockObject $cacheService;
     private UserService $userService;
 
     protected function setUp(): void
     {
         $this->userRepository = $this->createMock(UserRepositoryInterface::class);
-        $this->userService = new UserService($this->userRepository);
+        $this->cacheService = $this->createMock(CacheService::class);
+        $this->userService = new UserService($this->userRepository, $this->cacheService);
     }
 
     public function testGetUserLoansHistory(): void
@@ -35,6 +39,14 @@ class UserServiceTest extends TestCase
             'loans' => $loans,
             'totalCount' => 2
         ];
+        
+        $this->cacheService
+            ->expects($this->once())
+            ->method('cacheUserLoans')
+            ->with($user->getId(), $page)
+            ->willReturnCallback(function ($userId, $page, $callback) {
+                return $callback();
+            });
         
         $this->userRepository
             ->expects($this->once())
@@ -75,6 +87,14 @@ class UserServiceTest extends TestCase
             'totalCount' => 25
         ];
         
+        $this->cacheService
+            ->expects($this->once())
+            ->method('cacheUserLoans')
+            ->with($user->getId(), $page)
+            ->willReturnCallback(function ($userId, $page, $callback) {
+                return $callback();
+            });
+        
         $this->userRepository
             ->expects($this->once())
             ->method('getUserLoansHistory')
@@ -103,6 +123,14 @@ class UserServiceTest extends TestCase
             'loans' => $loans,
             'totalCount' => 0
         ];
+        
+        $this->cacheService
+            ->expects($this->once())
+            ->method('cacheUserLoans')
+            ->with($user->getId(), 1)
+            ->willReturnCallback(function ($userId, $page, $callback) {
+                return $callback();
+            });
         
         $this->userRepository
             ->expects($this->once())
