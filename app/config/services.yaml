@@ -19,5 +19,6 @@ services:
     # DI makes classes in src/ available to be used as services
     App\Repository\BookRepositoryInterface: '@App\Repository\BookRepository'
     App\Repository\LoanRepositoryInterface: '@App\Repository\LoanRepository'
+    App\Repository\UserRepositoryInterface: '@App\Repository\UserRepository'
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
