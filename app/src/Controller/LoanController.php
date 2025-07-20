@@ -1,0 +1,121 @@
+<?php
+
+namespace App\Controller;
+
+use App\Dto\CreateLoanDto;
+use App\Entity\Book;
+use App\Entity\User;
+use App\Enum\UserType;
+use App\Service\LoanService;
+use Doctrine\ORM\EntityManagerInterface;
+use OpenApi\Attributes as OA;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
+
+final class LoanController extends AbstractController
+{
+    public function __construct(
+        private readonly LoanService $loanService,
+        private readonly EntityManagerInterface $entityManager,
+        private readonly SerializerInterface $serializer,
+        private readonly ValidatorInterface $validator
+    ) {
+    }
+
+    #[Route('/api/loans', methods: ['POST'])]
+    #[IsGranted('IS_AUTHENTICATED_FULLY')]
+    #[OA\Post(
+        path: '/api/loans',
+        summary: 'Wypożyczenie książki',
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: 'bookId', type: 'integer', description: 'Book ID'),
+                    new OA\Property(property: 'userId', type: 'integer', description: 'User ID')
+                ]
+            )
+        ),
+        tags: ['Loans'],
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: 'Loan created successfully',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'id', type: 'integer'),
+                        new OA\Property(property: 'bookId', type: 'integer'),
+                        new OA\Property(property: 'userId', type: 'integer'),
+                        new OA\Property(property: 'loanDate', type: 'string', format: 'date-time'),
+                        new OA\Property(property: 'status', type: 'string', enum: ['lent', 'returned', 'overdue', 'lost']),
+                        new OA\Property(property: 'returnedAt', type: 'string', format: 'date-time', nullable: true)
+                    ]
+                )
+            ),
+            new OA\Response(response: 400, description: 'Validation error'),
+            new OA\Response(response: 401, description: 'Unauthorized'),
+            new OA\Response(response: 403, description: 'Access denied - Members can only create loans for themselves, Librarians cannot create loans for other librarians'),
+            new OA\Response(response: 404, description: 'Book or User not found')
+        ],
+        security: [['JWT' => []]],
+    )]
+    public function createLoan(Request $request): JsonResponse
+    {
+        $createLoanDto = $this->serializer->deserialize(
+            $request->getContent(),
+            CreateLoanDto::class,
+            'json'
+        );
+
+        $errors = $this->validator->validate($createLoanDto);
+        if (count($errors) > 0) {
+            $errorMessages = [];
+            foreach ($errors as $error) {
+                $errorMessages[] = $error->getMessage();
+            }
+            return new JsonResponse(['errors' => $errorMessages], 400);
+        }
+
+        $book = $this->entityManager->getRepository(Book::class)->find($createLoanDto->bookId);
+        if (!$book) {
+            return new JsonResponse(['error' => 'Book not found'], 404);
+        }
+
+        $user = $this->entityManager->getRepository(User::class)->find($createLoanDto->userId);
+        if (!$user) {
+            return new JsonResponse(['error' => 'User not found'], 404);
+        }
+
+        /** @var User $currentUser */
+        $currentUser = $this->getUser();
+        
+        if (!$this->isGranted('ROLE_LIBRARIAN')) {
+            if ($currentUser->getId() !== $createLoanDto->userId) {
+                return new JsonResponse(['error' => 'Access denied - You can only create loans for yourself'], 403);
+            }
+        } else {
+            if ($currentUser->getId() !== $createLoanDto->userId) {
+                if ($user->getType() === UserType::LIBRARIAN) {
+                    return new JsonResponse(['error' => 'Access denied - Cannot create loans for other librarians'], 403);
+                }
+            }
+        }
+
+        $loan = $this->loanService->createLoan($book, $user);
+
+        return new JsonResponse([
+            'id' => $loan->getId(),
+            'bookId' => $loan->getBook()->getId(),
+            'userId' => $loan->getUser()->getId(),
+            'loanDate' => $loan->getLoanDate()->format('c'),
+            'status' => $loan->getStatus()->value,
+            'returnedAt' => $loan->getReturnedAt()?->format('c')
+        ], 201);
+    }
+}

@@ -17,16 +17,27 @@ final class DevUserController extends AbstractController
         EntityManagerInterface $em,
         UserPasswordHasherInterface $hasher
     ): Response {
+        $librarian = new User();
+        $librarian->setName('Admin');
+        $librarian->setSurname('User');
+        $librarian->setEmail('admin@example.com');
+        $librarian->setType(UserType::LIBRARIAN);
+        $librarian->setPassword($hasher->hashPassword($librarian, 'Qwer123!'));
+
+        $em->persist($librarian);
+        $em->flush();
+
+
         $user = new User();
-        $user->setName('Admin');
-        $user->setSurname('User');
-        $user->setEmail('admin@example.com');
-        $user->setType(UserType::LIBRARIAN);
+        $user->setName('Test');
+        $user->setSurname('tested');
+        $user->setEmail('test@example.com');
+        $user->setType(UserType::MEMBER);
         $user->setPassword($hasher->hashPassword($user, 'Qwer123!'));
 
         $em->persist($user);
         $em->flush();
 
-        return new Response('User created!');
+        return new Response('Users created!');
     }
 }

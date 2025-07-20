@@ -3,41 +3,33 @@
 namespace App\Repository;
 
 use App\Entity\Loan;
+use App\Enum\LoanStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
  * @extends ServiceEntityRepository<Loan>
  */
-class LoanRepository extends ServiceEntityRepository
+class LoanRepository extends ServiceEntityRepository implements LoanRepositoryInterface
 {
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Loan::class);
     }
 
-//    /**
-//     * @return Loan[] Returns an array of Loan objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('l')
-//            ->andWhere('l.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('l.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
+    public function save(Loan $loan): void
+    {
+        $entityManager = $this->getEntityManager();
+        $entityManager->persist($loan);
+        $entityManager->flush();
+    }
 
-//    public function findOneBySomeField($value): ?Loan
-//    {
-//        return $this->createQueryBuilder('l')
-//            ->andWhere('l.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+    public function updateReturnData(Loan $loan, \DateTimeImmutable $returnedAt, LoanStatus $status): void
+    {
+        $loan->setReturnedAt($returnedAt);
+        $loan->setStatus($status);
+        
+        $entityManager = $this->getEntityManager();
+        $entityManager->flush();
+    }
 }
