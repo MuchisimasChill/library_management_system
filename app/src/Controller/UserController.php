@@ -3,9 +3,11 @@
 namespace App\Controller;
 
 use App\Dto\PaginationDto;
+use App\Entity\Loan;
 use App\Entity\User;
 use App\Service\UserService;
 use Doctrine\ORM\EntityManagerInterface;
+use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -62,16 +64,7 @@ final class UserController extends AbstractController
                         new OA\Property(
                             property: 'loans',
                             type: 'array',
-                            items: new OA\Items(
-                                properties: [
-                                    new OA\Property(property: 'id', type: 'integer'),
-                                    new OA\Property(property: 'bookId', type: 'integer'),
-                                    new OA\Property(property: 'userId', type: 'integer'),
-                                    new OA\Property(property: 'loanDate', type: 'string', format: 'date-time'),
-                                    new OA\Property(property: 'status', type: 'string', enum: ['lent', 'returned', 'overdue', 'lost']),
-                                    new OA\Property(property: 'returnedAt', type: 'string', format: 'date-time', nullable: true)
-                                ]
-                            )
+                            items: new OA\Items(ref: new Model(type: Loan::class))
                         ),
                         new OA\Property(
                             property: 'pagination',
@@ -125,18 +118,11 @@ final class UserController extends AbstractController
 
         $result = $this->userService->getUserLoansHistory($user, $paginationDto->page, $paginationDto->limit);
 
-        return new JsonResponse([
-            'loans' => array_map(function($loan) {
-                return [
-                    'id' => $loan->getId(),
-                    'bookId' => $loan->getBook()->getId(),
-                    'userId' => $loan->getUser()->getId(),
-                    'loanDate' => $loan->getLoanDate()->format('c'),
-                    'status' => $loan->getStatus()->value,
-                    'returnedAt' => $loan->getReturnedAt()?->format('c')
-                ];
-            }, $result['loans']),
+        return $this->json([
+            'loans' => $result['loans'],
             'pagination' => $result['pagination']
+        ], 200, [], [
+            'groups' => ['loan:list']
         ]);
     }
 }

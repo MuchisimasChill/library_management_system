@@ -56,7 +56,7 @@
 - [x] GET    /api/books/{id}          # Szczegóły książki
 - [x] POST   /api/loans               # Wypożyczenie książki
 - [x] PUT    /api/loans/{id}/return   # Zwrot książki
-- [ ] GET    /api/users/{id}/loans    # Historia wypożyczeń użytkownika
+- [x] GET    /api/users/{id}/loans    # Historia wypożyczeń użytkownika
 
 ---------------------------------------------------
 ## Wymagania techniczne
@@ -65,8 +65,8 @@
 - [x] Symfony 7.x+ z PHP 8.3+
 - [x] Doctrine ORM dla bazy danych
 - [x] Autoryzacja JWT (lexik/jwt-authentication-bundle)
-- [ ] Walidacja z Symfony Validator
-- [ ] Serialization groups dla API responses
+- [x] Walidacja z Symfony Validator
+- [x] Serialization groups dla API responses
 - [ ] Testy (minimum: unit testy dla serwisów)
 - [x] Docker setup (docker-compose.yml)
 
@@ -75,4 +75,4 @@
 - [x] API Documentation (NelmioApiDocBundle)
 - [ ] Event system (wysyłanie powiadomień)
 - [ ] Caching
-- [ ] Pagination
+- [x] Pagination

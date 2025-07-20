@@ -7,28 +7,47 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use OpenApi\Attributes as OA;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: BookRepository::class)]
+#[OA\Schema(
+    schema: 'Book',
+    properties: [
+        new OA\Property(property: 'id', type: 'integer', description: 'Book ID', example: 1),
+        new OA\Property(property: 'title', type: 'string', description: 'Book title', example: 'Harry Potter and the Philosopher\'s Stone'),
+        new OA\Property(property: 'author', type: 'string', description: 'Author name', example: 'J.K. Rowling'),
+        new OA\Property(property: 'isbn', type: 'string', description: 'ISBN number', example: '978-0-7475-3269-9'),
+        new OA\Property(property: 'publicationYear', type: 'integer', description: 'Publication year', example: 1997),
+        new OA\Property(property: 'numberOfCopies', type: 'integer', description: 'Number of copies', example: 10)
+    ]
+)]
 class Book
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['book:read', 'book:list', 'loan:read', 'loan:list'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['book:read', 'book:list', 'loan:read', 'loan:list'])]
     private ?string $title = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['book:read', 'book:list', 'loan:read', 'loan:list'])]
     private ?string $author = null;
 
     #[ORM\Column(length: 17, unique: true)]
+    #[Groups(['book:read', 'book:list'])]
     private ?string $isbn = null;
 
     #[ORM\Column(type: Types::SMALLINT, options: ['unsigned' => true])]
+    #[Groups(['book:read', 'book:list'])]
     private ?int $publicationYear = null;
 
     #[ORM\Column(type: Types::SMALLINT, options: ['unsigned' => true])]
+    #[Groups(['book:read', 'book:list'])]
     private ?int $numberOfCopies = null;
 
     /**

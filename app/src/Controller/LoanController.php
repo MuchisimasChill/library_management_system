@@ -44,16 +44,7 @@ final class LoanController extends AbstractController
             new OA\Response(
                 response: 201,
                 description: 'Loan created successfully',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'id', type: 'integer'),
-                        new OA\Property(property: 'bookId', type: 'integer'),
-                        new OA\Property(property: 'userId', type: 'integer'),
-                        new OA\Property(property: 'loanDate', type: 'string', format: 'date-time'),
-                        new OA\Property(property: 'status', type: 'string', enum: ['lent', 'returned', 'overdue', 'lost']),
-                        new OA\Property(property: 'returnedAt', type: 'string', format: 'date-time', nullable: true)
-                    ]
-                )
+                content: new OA\JsonContent(ref: new Model(type: Loan::class))
             ),
             new OA\Response(response: 400, description: 'Validation error'),
             new OA\Response(response: 401, description: 'Unauthorized'),
@@ -106,14 +97,9 @@ final class LoanController extends AbstractController
 
         $loan = $this->loanService->createLoan($book, $user);
 
-        return new JsonResponse([
-            'id' => $loan->getId(),
-            'bookId' => $loan->getBook()->getId(),
-            'userId' => $loan->getUser()->getId(),
-            'loanDate' => $loan->getLoanDate()->format('c'),
-            'status' => $loan->getStatus()->value,
-            'returnedAt' => $loan->getReturnedAt()?->format('c')
-        ], 201);
+        return $this->json($loan, 201, [], [
+            'groups' => ['loan:read']
+        ]);
     }
 
     #[Route('/api/loans/{id}/return', methods: ['PUT'])]
@@ -136,16 +122,7 @@ final class LoanController extends AbstractController
             new OA\Response(
                 response: 200,
                 description: 'Book returned successfully',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'id', type: 'integer'),
-                        new OA\Property(property: 'bookId', type: 'integer'),
-                        new OA\Property(property: 'userId', type: 'integer'),
-                        new OA\Property(property: 'loanDate', type: 'string', format: 'date-time'),
-                        new OA\Property(property: 'status', type: 'string', enum: ['lent', 'returned', 'overdue', 'lost']),
-                        new OA\Property(property: 'returnedAt', type: 'string', format: 'date-time')
-                    ]
-                )
+                content: new OA\JsonContent(ref: new Model(type: Loan::class))
             ),
             new OA\Response(response: 401, description: 'Unauthorized'),
             new OA\Response(response: 403, description: 'Access denied - Only librarians can return books'),
@@ -167,13 +144,8 @@ final class LoanController extends AbstractController
 
         $returnedLoan = $this->loanService->returnBook($loan);
 
-        return new JsonResponse([
-            'id' => $returnedLoan->getId(),
-            'bookId' => $returnedLoan->getBook()->getId(),
-            'userId' => $returnedLoan->getUser()->getId(),
-            'loanDate' => $returnedLoan->getLoanDate()->format('c'),
-            'status' => $returnedLoan->getStatus()->value,
-            'returnedAt' => $returnedLoan->getReturnedAt()->format('c')
+        return $this->json($returnedLoan, 200, [], [
+            'groups' => ['loan:read']
         ]);
     }
 }

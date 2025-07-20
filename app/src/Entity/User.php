@@ -7,33 +7,51 @@ use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use OpenApi\Attributes as OA;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
+#[OA\Schema(
+    schema: 'User',
+    properties: [
+        new OA\Property(property: 'id', type: 'integer', description: 'User ID', example: 1),
+        new OA\Property(property: 'name', type: 'string', description: 'First name', example: 'John'),
+        new OA\Property(property: 'surname', type: 'string', description: 'Last name', example: 'Doe'),
+        new OA\Property(property: 'email', type: 'string', description: 'Email address', example: 'john.doe@example.com'),
+        new OA\Property(property: 'type', type: 'string', description: 'User type', enum: ['LIBRARIAN', 'MEMBER'], example: 'MEMBER')
+    ]
+)]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['user:read', 'user:list', 'loan:read', 'loan:list'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['user:read', 'user:list'])]
     private ?string $name = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['user:read', 'user:list'])]
     private ?string $surname = null;
 
     #[ORM\Column(length: 255, unique: true)]
+    #[Groups(['user:read', 'user:list'])]
     private ?string $email = null;
 
     #[ORM\Column(enumType: UserType::class)]
+    #[Groups(['user:read', 'user:list'])]
     private ?UserType $type = null;
 
     /**
      * @var Collection<int, Loan>
      */
     #[ORM\OneToMany(targetEntity: Loan::class, mappedBy: 'user', orphanRemoval: true)]
+    #[Groups(['user:read'])]
     private Collection $loans;
 
     #[ORM\Column(length: 255)]

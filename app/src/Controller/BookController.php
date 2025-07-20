@@ -2,9 +2,9 @@
 
 namespace App\Controller;
 
-use App\Dto\BookDto;
 use App\Dto\BookFilterDto;
 use App\Dto\CreateBookDto;
+use App\Entity\Book;
 use App\Service\BookService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Routing\Attribute\Route;
@@ -75,7 +75,7 @@ final class BookController extends AbstractController
                         new OA\Property(
                             property: 'books',
                             type: 'array',
-                            items: new OA\Items(ref: new Model(type: BookDto::class))
+                            items: new OA\Items(ref: new Model(type: Book::class))
                         ),
                         new OA\Property(property: 'totalCount', type: 'integer', description: 'Total number of books matching filters'),
                         new OA\Property(property: 'currentPage', type: 'integer', description: 'Current page number'),
@@ -128,7 +128,9 @@ final class BookController extends AbstractController
 
         $books = $this->bookService->getBooks($filters);
 
-        return $this->json($books);
+        return $this->json($books, 200, [], [
+            'groups' => ['book:list']
+        ]);
     }
 
     #[Route('/api/books', name: 'app_book_create', methods: ['POST'])]
@@ -145,16 +147,7 @@ final class BookController extends AbstractController
             new OA\Response(
                 response: 201,
                 description: 'Book created successfully',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'id', type: 'integer', description: 'Book ID'),
-                        new OA\Property(property: 'title', type: 'string', description: 'Book title'),
-                        new OA\Property(property: 'author', type: 'string', description: 'Author name'),
-                        new OA\Property(property: 'isbn', type: 'string', description: 'ISBN number'),
-                        new OA\Property(property: 'year', type: 'integer', description: 'Publication year'),
-                        new OA\Property(property: 'copies', type: 'integer', description: 'Number of copies')
-                    ]
-                )
+                content: new OA\JsonContent(ref: new Model(type: Book::class))
             ),
             new OA\Response(
                 response: 400,
@@ -215,8 +208,10 @@ final class BookController extends AbstractController
                 'copies' => $createBookDto->copies
             ];
             
-            $bookDto = $this->bookService->createBook($data);
-            return $this->json($bookDto, 201);
+            $book = $this->bookService->createBook($data);
+            return $this->json($book, 201, [], [
+                'groups' => ['book:read']
+            ]);
         } catch (\Exception $e) {
             return $this->json(['errors' => [$e->getMessage()]], 400);
         }
@@ -242,7 +237,7 @@ final class BookController extends AbstractController
             new OA\Response(
                 response: 200,
                 description: 'Returns book details',
-                content: new OA\JsonContent(ref: new Model(type: BookDto::class))
+                content: new OA\JsonContent(ref: new Model(type: Book::class))
             ),
             new OA\Response(
                 response: 404,
@@ -275,6 +270,8 @@ final class BookController extends AbstractController
             return $this->json(['error' => 'Book not found'], 404);
         }
 
-        return $this->json($book);
+        return $this->json($book, 200, [], [
+            'groups' => ['book:read']
+        ]);
     }
 }
