@@ -10,11 +10,11 @@ use App\Enum\LoanStatus;
 use App\Enum\UserType;
 use App\Service\LoanService;
 use Doctrine\ORM\EntityManagerInterface;
+use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Serializer\SerializerInterface;
@@ -37,12 +37,7 @@ final class LoanController extends AbstractController
         summary: 'Wypożyczenie książki',
         requestBody: new OA\RequestBody(
             required: true,
-            content: new OA\JsonContent(
-                properties: [
-                    new OA\Property(property: 'bookId', type: 'integer', description: 'Book ID'),
-                    new OA\Property(property: 'userId', type: 'integer', description: 'User ID')
-                ]
-            )
+            content: new OA\JsonContent(ref: new Model(type: CreateLoanDto::class))
         ),
         tags: ['Loans'],
         responses: [
