@@ -9,13 +9,18 @@
     ```bash
     docker compose exec app php bin/console doctrine:migrations:migrate
     ```
-1. To create test user go to [Create user](http://localhost:8000/dev/create-user)
+1. To create test users go to [Create users](http://localhost:8000/dev/create-user)
 
 ------------------ 
 
-## Test User credentials
+### Test Librarian credentials
 - Email: ```admin@example.com```
 - Password: ```Qwer123!```
+### Test Member credentials
+- Email: ```test@example.com```
+- Password: ```Qwer123!```
+
+--------------
 
 ## Data Base
 - Host/IP: 127.0.0.1
@@ -49,8 +54,8 @@
 - [x] GET    /api/books               # Lista książek (z filtrowaniem)
 - [x] POST   /api/books               # Dodanie książki (tylko LIBRARIAN)
 - [x] GET    /api/books/{id}          # Szczegóły książki
-- [ ] POST   /api/loans               # Wypożyczenie książki
-- [ ] PUT    /api/loans/{id}/return   # Zwrot książki
+- [x] POST   /api/loans               # Wypożyczenie książki
+- [x] PUT    /api/loans/{id}/return   # Zwrot książki
 - [ ] GET    /api/users/{id}/loans    # Historia wypożyczeń użytkownika
 
 ---------------------------------------------------

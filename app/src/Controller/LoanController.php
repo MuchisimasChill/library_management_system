@@ -4,7 +4,9 @@ namespace App\Controller;
 
 use App\Dto\CreateLoanDto;
 use App\Entity\Book;
+use App\Entity\Loan;
 use App\Entity\User;
+use App\Enum\LoanStatus;
 use App\Enum\UserType;
 use App\Service\LoanService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -117,5 +119,66 @@ final class LoanController extends AbstractController
             'status' => $loan->getStatus()->value,
             'returnedAt' => $loan->getReturnedAt()?->format('c')
         ], 201);
+    }
+
+    #[Route('/api/loans/{id}/return', methods: ['PUT'])]
+    #[IsGranted('ROLE_LIBRARIAN')]
+    #[OA\Put(
+        path: '/api/loans/{id}/return',
+        summary: 'Zwrot książki (LIBRARIAN only)',
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                required: true,
+                description: 'Loan ID',
+                schema: new OA\Schema(type: 'integer'),
+                example: 1
+            )
+        ],
+        tags: ['Loans'],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Book returned successfully',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'id', type: 'integer'),
+                        new OA\Property(property: 'bookId', type: 'integer'),
+                        new OA\Property(property: 'userId', type: 'integer'),
+                        new OA\Property(property: 'loanDate', type: 'string', format: 'date-time'),
+                        new OA\Property(property: 'status', type: 'string', enum: ['lent', 'returned', 'overdue', 'lost']),
+                        new OA\Property(property: 'returnedAt', type: 'string', format: 'date-time')
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: 'Unauthorized'),
+            new OA\Response(response: 403, description: 'Access denied - Only librarians can return books'),
+            new OA\Response(response: 404, description: 'Loan not found'),
+            new OA\Response(response: 400, description: 'Book already returned')
+        ],
+        security: [['JWT' => []]],
+    )]
+    public function returnBook(int $id): JsonResponse
+    {
+        $loan = $this->entityManager->getRepository(Loan::class)->find($id);
+        if (!$loan) {
+            return new JsonResponse(['error' => 'Loan not found'], 404);
+        }
+
+        if ($loan->getStatus() === LoanStatus::RETURNED) {
+            return new JsonResponse(['error' => 'Book already returned'], 400);
+        }
+
+        $returnedLoan = $this->loanService->returnBook($loan);
+
+        return new JsonResponse([
+            'id' => $returnedLoan->getId(),
+            'bookId' => $returnedLoan->getBook()->getId(),
+            'userId' => $returnedLoan->getUser()->getId(),
+            'loanDate' => $returnedLoan->getLoanDate()->format('c'),
+            'status' => $returnedLoan->getStatus()->value,
+            'returnedAt' => $returnedLoan->getReturnedAt()->format('c')
+        ]);
     }
 }
