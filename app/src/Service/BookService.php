@@ -10,7 +10,8 @@ use InvalidArgumentException;
 class BookService
 {
     public function __construct(
-        private readonly BookRepositoryInterface $bookRepository
+        private readonly BookRepositoryInterface $bookRepository,
+        private readonly CacheService $cacheService
     ) {}
 
     /**
@@ -19,17 +20,26 @@ class BookService
      */
     public function getBooks(BookFilterDto $filters): array
     {
-        $books = $this->bookRepository->findByFilters($filters);
-        $totalCount = $this->bookRepository->countByFilters($filters);
-        $pageSize = 10;
-        $totalPages = (int) ceil($totalCount / $pageSize);
+        // Generate cache key based on filters
+        $cacheKey = $this->cacheService->generateBooksListKey([
+            'title' => $filters->title,
+            'author' => $filters->author,
+            'pageNumber' => $filters->pageNumber,
+        ]);
 
-        return [
-            'books' => $books,
-            'totalCount' => $totalCount,
-            'currentPage' => $filters->pageNumber,
-            'totalPages' => $totalPages,
-        ];
+        return $this->cacheService->cacheBooksList($cacheKey, function () use ($filters) {
+            $books = $this->bookRepository->findByFilters($filters);
+            $totalCount = $this->bookRepository->countByFilters($filters);
+            $pageSize = 10;
+            $totalPages = (int) ceil($totalCount / $pageSize);
+
+            return [
+                'books' => $books,
+                'totalCount' => $totalCount,
+                'currentPage' => $filters->pageNumber,
+                'totalPages' => $totalPages,
+            ];
+        });
     }
 
     /**
@@ -37,7 +47,9 @@ class BookService
      */
     public function getBookById(int $id): ?Book
     {
-        return $this->bookRepository->findBookById($id);
+        return $this->cacheService->cacheBook($id, function () use ($id) {
+            return $this->bookRepository->findBookById($id);
+        });
     }
 
     /**
@@ -67,6 +79,9 @@ class BookService
         $book->setNumberOfCopies((int) $data['copies']);
 
         $this->bookRepository->save($book);
+
+        // Clear cache after creating new book
+        $this->cacheService->invalidateBookCaches();
 
         return $book;
     }

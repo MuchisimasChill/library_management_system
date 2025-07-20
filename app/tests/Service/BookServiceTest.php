@@ -6,18 +6,21 @@ use App\Dto\BookFilterDto;
 use App\Entity\Book;
 use App\Repository\BookRepositoryInterface;
 use App\Service\BookService;
+use App\Service\CacheService;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
 class BookServiceTest extends TestCase
 {
     private BookRepositoryInterface $bookRepository;
+    private CacheService $cacheService;
     private BookService $bookService;
 
     protected function setUp(): void
     {
         $this->bookRepository = $this->createMock(BookRepositoryInterface::class);
-        $this->bookService = new BookService($this->bookRepository);
+        $this->cacheService = $this->createMock(CacheService::class);
+        $this->bookService = new BookService($this->bookRepository, $this->cacheService);
     }
 
     public function testGetBooks(): void

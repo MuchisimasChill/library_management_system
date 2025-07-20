@@ -11,7 +11,8 @@ use App\Repository\LoanRepositoryInterface;
 class LoanService
 {
     public function __construct(
-        private readonly LoanRepositoryInterface $loanRepository
+        private readonly LoanRepositoryInterface $loanRepository,
+        private readonly CacheService $cacheService
     ) {
     }
 
@@ -25,6 +26,10 @@ class LoanService
 
         $this->loanRepository->save($loan);
 
+        // Clear cache for user loans and book details
+        $this->cacheService->invalidateLoanCaches($user->getId());
+        $this->cacheService->invalidateBookCaches($book->getId());
+
         return $loan;
     }
 
@@ -35,6 +40,10 @@ class LoanService
             new \DateTimeImmutable(),
             LoanStatus::RETURNED
         );
+
+        // Clear cache for user loans and book details
+        $this->cacheService->invalidateLoanCaches($loan->getUser()->getId());
+        $this->cacheService->invalidateBookCaches($loan->getBook()->getId());
 
         return $loan;
     }
