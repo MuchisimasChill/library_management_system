@@ -1,0 +1,25 @@
+framework:
+    rate_limiter:
+        # General API rate limit
+        api_general:
+            policy: 'sliding_window'
+            limit: 100
+            interval: '1 minute'
+
+        # Login attempts rate limit
+        login_attempts:
+            policy: 'fixed_window'
+            limit: 5
+            interval: '5 minutes'
+
+        # Book creation rate limit (for librarians)
+        book_creation:
+            policy: 'sliding_window'
+            limit: 10
+            interval: '1 minute'
+
+        # Loan creation rate limit
+        loan_creation:
+            policy: 'sliding_window'
+            limit: 20
+            interval: '1 minute'

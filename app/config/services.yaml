@@ -20,5 +20,15 @@ services:
     App\Repository\BookRepositoryInterface: '@App\Repository\BookRepository'
     App\Repository\LoanRepositoryInterface: '@App\Repository\LoanRepository'
     App\Repository\UserRepositoryInterface: '@App\Repository\UserRepository'
+
+    # Rate Limiter services
+    App\EventListener\RateLimitListener:
+        arguments:
+            $apiGeneralLimiter: '@limiter.api_general'
+            $loginAttemptsLimiter: '@limiter.login_attempts'
+            $bookCreationLimiter: '@limiter.book_creation'
+            $loanCreationLimiter: '@limiter.loan_creation'
+            $security: '@security.helper'
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

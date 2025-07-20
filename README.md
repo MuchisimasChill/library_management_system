@@ -29,6 +29,11 @@
 - Password: password
 - Database: app_db
 
+## Redis
+- Host/IP: 127.0.0.1
+- Port: 6379
+- Used for: Rate limiting, Caching
+
 ## Tests
 ### Unit
 ```bash
@@ -70,11 +75,11 @@ docker compose exec app php bin/phpunit
 - [x] Autoryzacja JWT (lexik/jwt-authentication-bundle)
 - [x] Walidacja z Symfony Validator
 - [x] Serialization groups dla API responses
-- [ ] Testy (minimum: unit testy dla serwisów)
+- [x] Testy (minimum: unit testy dla serwisów)
 - [x] Docker setup (docker-compose.yml)
 
 ### Dodatkowe:
-- [ ] Rate limiting
+- [x] Rate limiting
 - [x] API Documentation (NelmioApiDocBundle)
 - [ ] Event system (wysyłanie powiadomień)
 - [ ] Caching
